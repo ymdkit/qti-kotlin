@@ -1,4 +1,5 @@
 package com.example.qti.resource
 
-interface QtiInteraction {
-}
+interface QtiInteraction
+
+object EmptyQtiInteraction: QtiInteraction
