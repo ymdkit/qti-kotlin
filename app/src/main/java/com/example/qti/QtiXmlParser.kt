@@ -1,10 +1,11 @@
 package com.example.qti
 
+import com.example.qti.constant.QtiAttribute
+import com.example.qti.constant.QtiTag
 import com.example.qti.resource.*
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import java.io.InputStream
-import java.lang.Exception
 
 class QtiXmlParser {
 
@@ -22,24 +23,24 @@ class QtiXmlParser {
 
         val builder = QtiAssessmentItemBuilder()
 
-        parser.require(XmlPullParser.START_TAG, null, "qti-assessment-item")
+        parser.require(XmlPullParser.START_TAG, null, QtiTag.QTI_ASSESSMENT_ITEM)
         while (parser.next() != XmlPullParser.END_TAG) {
             if (parser.eventType != XmlPullParser.START_TAG) {
                 continue
             }
 
             when (parser.name) {
-                "qti-response-declaration" -> builder.setResponse(
+                QtiTag.QTI_RESPONSE_DECLARATION -> builder.setResponse(
                     readQtiAssessmentItemResponse(
                         parser
                     )
                 )
-                "qti-outcome-declaration" -> builder.setOutCome(
+                QtiTag.QTI_OUTCOME_DECLARATION -> builder.setOutCome(
                     readQtiAssessmentItemOutcome(
                         parser
                     )
                 )
-                "qti-item-body" -> builder.setItemBody(
+                QtiTag.QTI_ITEM_BODY -> builder.setItemBody(
                     readQtiAssessmentItemBody(
                         parser
                     )
@@ -51,54 +52,54 @@ class QtiXmlParser {
     }
 
     private fun readQtiAssessmentItemResponse(parser: XmlPullParser): QtiResponse {
-        parser.require(XmlPullParser.START_TAG, null, "qti-response-declaration")
+        parser.require(XmlPullParser.START_TAG, null, QtiTag.QTI_RESPONSE_DECLARATION)
         val answers = arrayListOf<String>()
 
         parser.nextTag()
         parser.nextTag()
 
-        while (parser.name == "qti-value") {
+        while (parser.name == QtiTag.QTI_VALUE) {
             answers.add(parser.nextText())
             parser.nextTag()
             parser.nextTag()
         }
 
-        parser.require(XmlPullParser.END_TAG, null, "qti-response-declaration")
+        parser.require(XmlPullParser.END_TAG, null, QtiTag.QTI_RESPONSE_DECLARATION)
         return QtiResponse(answers.toList())
     }
 
     private fun readQtiAssessmentItemOutcome(parser: XmlPullParser): QtiOutcome {
-        parser.require(XmlPullParser.START_TAG, null, "qti-outcome-declaration")
+        parser.require(XmlPullParser.START_TAG, null, QtiTag.QTI_OUTCOME_DECLARATION)
         var value = 0f
         parser.nextTag()
         parser.nextTag()
 
-        if (parser.name == "qti-value") {
+        if (parser.name == QtiTag.QTI_VALUE) {
             value = parser.nextText().toFloat()
         }
 
         parser.nextTag()
         parser.nextTag()
 
-        parser.require(XmlPullParser.END_TAG, null, "qti-outcome-declaration")
+        parser.require(XmlPullParser.END_TAG, null, QtiTag.QTI_OUTCOME_DECLARATION)
         return QtiOutcome(value = value)
     }
 
     private fun readQtiAssessmentItemBody(parser: XmlPullParser): QtiItemBody {
-        parser.require(XmlPullParser.START_TAG, null, "qti-item-body")
+        parser.require(XmlPullParser.START_TAG, null, QtiTag.QTI_ITEM_BODY)
 
         var itemBody = QtiItemBody()
 
         var prompt = ""
         parser.next()
-        while (parser.name != "qti-choice-interaction") {
+        while (parser.name != QtiTag.QTI_CHOICE_INTERACTION) {
             parser.name?.let {
-                if(it.isNotBlank()){
+                if (it.isNotBlank()) {
                     prompt += "<${if (parser.eventType == XmlPullParser.END_TAG) "/" else ""}${it}>"
                 }
             }
             parser.text?.let {
-                if(it.isNotBlank()){
+                if (it.isNotBlank()) {
                     prompt += it
                 }
             }
@@ -106,12 +107,12 @@ class QtiXmlParser {
         }
         itemBody = itemBody.copy(prompt = QtiPrompt(prompt))
 
-        val maxChoices = parser.getAttributeValue(null, "max-choices").toInt()
-        val minChoices = parser.getAttributeValue(null, "min-choices").toInt()
+        val maxChoices = parser.getAttributeValue(null, QtiAttribute.MAX_CHOICES).toInt()
+        val minChoices = parser.getAttributeValue(null, QtiAttribute.MIN_CHOICES).toInt()
         parser.nextTag()
         val choices = arrayListOf<Pair<String, String>>()
-        while (parser.name == "qti-simple-choice") {
-            choices.add(parser.getAttributeValue(null, "identifier") to parser.nextText())
+        while (parser.name == QtiTag.QTI_SIMPLE_CHOICE) {
+            choices.add(parser.getAttributeValue(null, QtiAttribute.IDENTIFIER) to parser.nextText())
             parser.nextTag()
         }
         val interaction = SimpleChoiceQtiInteraction(
@@ -123,7 +124,7 @@ class QtiXmlParser {
 
         parser.nextTag()
 
-        parser.require(XmlPullParser.END_TAG, null, "qti-item-body")
+        parser.require(XmlPullParser.END_TAG, null, QtiTag.QTI_ITEM_BODY)
         return itemBody
     }
 
