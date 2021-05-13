@@ -2,6 +2,8 @@ package com.example.qti
 
 import com.example.qti.constant.QtiAttribute
 import com.example.qti.constant.QtiTag
+import com.example.qti.ext.moveTo
+import com.example.qti.ext.skip
 import com.example.qti.resource.*
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
@@ -45,7 +47,7 @@ class QtiXmlParser {
                         parser
                     )
                 )
-                else -> skip(parser)
+                else -> parser.skip()
             }
         }
         return builder.build()
@@ -55,9 +57,7 @@ class QtiXmlParser {
         parser.require(XmlPullParser.START_TAG, null, QtiTag.QTI_RESPONSE_DECLARATION)
         val answers = arrayListOf<String>()
 
-        parser.nextTag()
-        parser.nextTag()
-
+        parser.moveTo(listOf(QtiTag.QTI_VALUE))
         while (parser.name == QtiTag.QTI_VALUE) {
             answers.add(parser.nextText())
             parser.nextTag()
@@ -70,16 +70,10 @@ class QtiXmlParser {
 
     private fun readQtiAssessmentItemOutcome(parser: XmlPullParser): QtiOutcome {
         parser.require(XmlPullParser.START_TAG, null, QtiTag.QTI_OUTCOME_DECLARATION)
-        var value = 0f
-        parser.nextTag()
-        parser.nextTag()
 
-        if (parser.name == QtiTag.QTI_VALUE) {
-            value = parser.nextText().toFloat()
-        }
-
-        parser.nextTag()
-        parser.nextTag()
+        parser.moveTo(listOf(QtiTag.QTI_VALUE))
+        val value = parser.nextText().toFloat()
+        parser.moveTo(listOf(QtiTag.QTI_OUTCOME_DECLARATION))
 
         parser.require(XmlPullParser.END_TAG, null, QtiTag.QTI_OUTCOME_DECLARATION)
         return QtiOutcome(value = value)
@@ -112,7 +106,12 @@ class QtiXmlParser {
         parser.nextTag()
         val choices = arrayListOf<Pair<String, String>>()
         while (parser.name == QtiTag.QTI_SIMPLE_CHOICE) {
-            choices.add(parser.getAttributeValue(null, QtiAttribute.IDENTIFIER) to parser.nextText())
+            choices.add(
+                parser.getAttributeValue(
+                    null,
+                    QtiAttribute.IDENTIFIER
+                ) to parser.nextText()
+            )
             parser.nextTag()
         }
         val interaction = SimpleChoiceQtiInteraction(
@@ -126,18 +125,5 @@ class QtiXmlParser {
 
         parser.require(XmlPullParser.END_TAG, null, QtiTag.QTI_ITEM_BODY)
         return itemBody
-    }
-
-    private fun skip(parser: XmlPullParser) {
-        if (parser.eventType != XmlPullParser.START_TAG) {
-            throw IllegalStateException()
-        }
-        var depth = 1
-        while (depth != 0) {
-            when (parser.next()) {
-                XmlPullParser.END_TAG -> depth--
-                XmlPullParser.START_TAG -> depth++
-            }
-        }
     }
 }
