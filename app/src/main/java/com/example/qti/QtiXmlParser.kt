@@ -15,7 +15,7 @@ class QtiXmlParser {
         inputStream.use {
             val parser = XmlPullParserFactory.newInstance().newPullParser()
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
-            parser.setInput(inputStream, null)
+            parser.setInput(it, null)
             parser.nextTag()
             return readQtiAssessmentItems(parser)
         }
